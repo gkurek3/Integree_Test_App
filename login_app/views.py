@@ -1,20 +1,31 @@
-from django.contrib.auth import authenticate, login
-from django.shortcuts import redirect
+from django.contrib.auth import authenticate, login, logout
+from django.http import HttpResponse
+from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
+from django.views import View
 from django.views.generic import FormView
 
 from login_app.forms import LoginForm
 
 
-class LoginView(FormView):
-    template_name = 'login.html'
-    form_class = LoginForm
-    success_url = reverse_lazy('success')
+class LoginView(View):
 
-    def form_valid(self, form):
-        user = authenticate(username=form.cleaned_data['username'], password=form.cleaned_data['password'])
+    def get(self, request):
+        return render(request, 'login.html')
+
+    def post(self, request):
+        username = request.POST.get("username")
+        password = request.POST.get("password")
+        user = authenticate(username=username, password=password)
         if user is not None:
             login(self.request, user)
         else:
-            return redirect(reverse_lazy('login'))
-        return super(LoginView, self).form_valid(form)
+            return render(request, 'login_incorrect.html', {"username": username, "message": "Logowanie nieudane"})
+        return render(request, 'login_correct.html', {'username': username})
+
+
+class LogoutView(View):
+
+    def get(self, request):
+        logout(request)
+        return redirect(reverse_lazy('login'))
